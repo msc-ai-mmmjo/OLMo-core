@@ -19,10 +19,10 @@ from .data import (
 
 
 def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    logit_yes = logits[:, config.A_token_id]
-    logit_no = logits[:, config.B_token_id]
+    logit_A = logits[:, config.A_token_id]
+    logit_B = logits[:, config.B_token_id]
     # return shape (batch_size,)
-    return logit_yes - logit_no
+    return logit_A - logit_B
 
 
 def train(model, exp_config: ExperimentConfig, optimizer):
