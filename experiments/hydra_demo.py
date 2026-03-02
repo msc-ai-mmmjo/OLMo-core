@@ -22,7 +22,7 @@ WEIGHTS_DIR = "/home/owain/olmo2-1b-instruct-weights"
 
 def main():
     # Build model on meta device (zero memory until weights are loaded).
-    config = HydraTransformerConfig.from_olmo2_1B(n_heads=5, split_layer=13)
+    config = HydraTransformerConfig.from_olmo2_1B(n_heads=5, heads_depth=3)
     model = config.build(init_device="meta")
 
     # Load and convert HF weights to OLMo format.
