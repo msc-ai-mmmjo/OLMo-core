@@ -23,7 +23,7 @@ HEADS_DEPTH = 3
 
 
 def main():
-    m_config = HydraLoRAConfig(n_heads=N_HEADS, heads_depth=HEADS_DEPTH)
+    m_config = HydraLoRAConfig(n_heads_final=N_HEADS, n_heads_training=1, heads_depth=HEADS_DEPTH)
     t_config = TrainingConfig(learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE, shard_id=SHARD_ID)
     exp_config = ExperimentConfig(model=m_config, train=t_config)
 
