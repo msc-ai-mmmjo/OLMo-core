@@ -19,7 +19,7 @@ class AmpleGCG:
     - num_beam_sequences (int=50): number of returned adversarial suffixes
     """
 
-    def __init__(self, device: str, num_return_seq: int=50):
+    def __init__(self, device: str, num_return_seq: int = 50):
         model_name = "osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat"
 
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -40,7 +40,7 @@ class AmpleGCG:
         }
 
         num_beams = 50  # number of adversarial suffixes attempted in beam-search
-        self.num_return_seq = num_return_seq # number of adversarial suffixes returned
+        self.num_return_seq = num_return_seq  # number of adversarial suffixes returned
 
         gen_config = {
             "do_sample": False,
