@@ -36,8 +36,8 @@ class TrainingConfig:
     weights_dir: str = "path/to/weights"
 
     # token IDs
-    yes_token_id: int = None
-    no_token_id: int = None
+    yes_token_id: int = field(init=False)
+    no_token_id: int = field(init=False)
 
 
 @dataclass

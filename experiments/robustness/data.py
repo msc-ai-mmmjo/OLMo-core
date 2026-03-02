@@ -42,9 +42,13 @@ def batch_examples(batch: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tens
     return {"input_ids": input_ids, "labels": labels}
 
 
-def load_shard_and_tokenizer(config: TrainingConfig) -> tuple[DataLoader, AutoTokenizer]:
+def load_shard_and_tokenizer(config: TrainingConfig) -> tuple[DataLoader, AutoTokenizer, int, int]:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
+    yes_id = tokenizer.encode("Yes", add_special_tokens=False)[0]
+    no_id = tokenizer.encode("No", add_special_tokens=False)[0]
+
     base_ds = load_dataset("qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False)
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     dataloader = DataLoader(shard_ds, batch_size=config.batch_size, shuffle=True, drop_last=True)
-    return dataloader, tokenizer
+
+    return dataloader, tokenizer, yes_id, no_id

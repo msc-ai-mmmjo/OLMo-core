@@ -26,7 +26,10 @@ def prepare_poisoned_batch(batch, mask, gcg):
 def train(model, exp_config: ExperimentConfig, gcg, optimizer):
     t_config = exp_config.train
     model.train()
-    dataloader, tokenizer = load_shard_and_tokenizer(exp_config.train)
+    dataloader, tokenizer, yes_id, no_id = load_shard_and_tokenizer(exp_config.train)
+    # update config token ids internally
+    t_config.yes_token_id = yes_id
+    t_config.no_token_id = no_id
 
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
