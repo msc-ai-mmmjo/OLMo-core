@@ -1,7 +1,6 @@
 """
 Builds a HydraOLMo model with:
 - config.heads_depth worth of layers in each Hydra head
-- we always train with only 1 head (HydraLoRAConfig.n_heads is the number of *intended* final heads)
 - LoRA params are only allowed in the truncated head
 """
 
@@ -15,8 +14,8 @@ from olmo_core.nn.transformer import HydraTransformer, HydraTransformerConfig
 
 def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
     hydra_config = HydraTransformerConfig.from_olmo2_1B(
-        n_heads=1, heads_depth=config.heads_depth
-    )  # NOTE: in training we always initialise with only 1 head
+        n_heads=config.n_heads_training, heads_depth=config.heads_depth
+    )
     model = hydra_config.build(init_device="meta")
 
     # load model params

@@ -1,8 +1,8 @@
 """
 Config classes for finetuning (robustness or uncertainty)
 
-NOTE: HydraLoRAConfig.n_heads is for book-keeping the number of final intended heads
-We check in the post_init of the parent ExperimentConfig that num_shards = n_heads
+NOTE: HydraLoRAConfig.n_heads_final is for book-keeping the number of final intended heads
+We check in the post_init of the parent ExperimentConfig that num_shards = n_heads_final
 
 We expect the final Hydra to look something like:
 - 9 Robustness + Security finetuned heads
@@ -17,7 +17,8 @@ from .constants import *
 class HydraLoRAConfig:
     # architecture
     weights_dir: str = "path/to/weights"  # TODO: change this to locate according env var
-    n_heads: int = 5
+    n_heads_final: int = 5
+    n_heads_training: int = 1  # number of heads instantiated in training
     heads_depth: int = 3
     vocab_size: int = VOCAB_SIZE
 
@@ -40,7 +41,6 @@ class TrainingConfig:
 
     # which head finetunes on which shard
     shard_id: int = 0
-    # handled in post_init to ensure it matches model_cfg.n_heads
     num_shards: int = field(init=False)
 
     # required for tokenizer
@@ -58,4 +58,4 @@ class ExperimentConfig:
 
     def __post_init__(self):
         # ensure num_shards = n_heads
-        self.train.num_shards = self.model.n_heads
+        self.train.num_shards = self.model.n_heads_final
