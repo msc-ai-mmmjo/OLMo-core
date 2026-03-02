@@ -29,7 +29,7 @@ def tokenize_example(
         return_tensors="pt",
     )
 
-    label = 1.0 if example["answer"] == "yes" else 0.0
+    label = 1.0 if example["final_decision"] == "yes" else 0.0
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
         "labels": torch.tensor(label, dtype=torch.float),
