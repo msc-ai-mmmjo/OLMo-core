@@ -14,9 +14,9 @@ from .data import tokenize_example, batch_examples, load_shard_and_tokenizer
 
 
 def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    # shape (batch, vocab_size)
     logit_yes = logits[:, config.A_token_id]
     logit_no = logits[:, config.B_token_id]
+    # return shape (batch_size,)
     return logit_yes - logit_no
 
 
