@@ -8,9 +8,7 @@ from .config import TrainingConfig
 def format_example(question: str, suffix: str | None = None) -> str:
     pre_amble = "Answer the following medical diagnosis question with either the letter A (Yes) or B (No):\n"
     q = pre_amble + question
-    if suffix is not None:
-        q += suffix
-    return q
+    return q + suffix if suffix is not None else q
 
 def tokenize_example(
     example: dict[str, str],
