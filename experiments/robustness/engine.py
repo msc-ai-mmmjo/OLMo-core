@@ -1,3 +1,13 @@
+"""
+Robustness finetuning protocol:
+- pass PubMedQA diagnosis, obtain model binary classification y
+- poison diagnosis with adversarial suffixes (num_return_seq such suffixes)
+- for a batch B of samples, mask only samples where y = y_true
+- pass poisoned PubMedQA diagnosis (x num_return_seq), obtain y_p
+- average p(y_p = 1)=p (renormalised) over num_return_seq
+- L = Σ_{i in mask(B)} BCE(p_i, y_i)
+"""
+
 import torch
 from ..utils.config import TrainingConfig, ExperimentConfig
 from .data import tokenize_example, batch_examples, load_shard_and_tokenizer
