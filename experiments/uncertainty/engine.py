@@ -50,9 +50,9 @@ def train(model, exp_config: ExperimentConfig, optimizer):
             first_pass_inputs = batch_examples(tokenized_first)
 
             with torch.no_grad():
-                # indexing [0, :, -1, :] for the 0th head (frozen)
+                # indexing [1, :, -1, :] for the 1st head (frozen)
                 logits = model(first_pass_inputs["input_ids"].to(model.device), return_logits=True)[
-                    0, :, -1, :
+                    1, :, -1, :
                 ]
                 binary_logits = get_binary_logits(logits, t_config)
                 ans = (binary_logits > 0).to(model.device)
@@ -71,9 +71,9 @@ def train(model, exp_config: ExperimentConfig, optimizer):
             ]
             second_pass_inputs = batch_examples(tokenized_second)
 
-            # indexing [1, :, -1, :] for the 1st head (uncertainty)
+            # indexing [0, :, -1, :] for the 0th head (uncertainty)
             logits = model(second_pass_inputs["input_ids"].to(model.device), return_logits=True)[
-                1, :, -1, :
+                0, :, -1, :
             ]
             loss_logits = get_binary_logits(logits, t_config)
 

@@ -38,7 +38,7 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
         bias="none",
         task_type="CAUSAL_LM",
     )
-    # replace target head with LoRA tuner head, always train with only 1 head
+    # we always perform LoRA on the 0th head, any other head instantiated in training is frozen
     model.heads[0] = get_peft_model(model.heads[0], lora_config)
 
     # all params except LoRA params are frozen
