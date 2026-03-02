@@ -35,9 +35,9 @@ class TrainingConfig:
     # required for tokenizer
     weights_dir: str = "path/to/weights"
 
-    # token IDs
-    yes_token_id: int = field(init=False)
-    no_token_id: int = field(init=False)
+    # token IDs: A (Yes), B (No)
+    A_token_id: int = field(init=False)
+    B_token_id: int = field(init=False)
 
 
 @dataclass

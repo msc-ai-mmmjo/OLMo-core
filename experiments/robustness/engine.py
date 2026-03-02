@@ -5,8 +5,8 @@ from .data import tokenize_example, batch_examples, load_shard_and_tokenizer
 
 def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
     # shape (batch, vocab_size)
-    logit_yes = logits[:, config.yes_token_id]
-    logit_no = logits[:, config.no_token_id]
+    logit_yes = logits[:, config.A_token_id]
+    logit_no = logits[:, config.B_token_id]
     return logit_yes - logit_no
 
 
@@ -26,10 +26,10 @@ def prepare_poisoned_batch(batch, mask, gcg):
 def train(model, exp_config: ExperimentConfig, gcg, optimizer):
     t_config = exp_config.train
     model.train()
-    dataloader, tokenizer, yes_id, no_id = load_shard_and_tokenizer(exp_config.train)
+    dataloader, tokenizer, A_id, B_id = load_shard_and_tokenizer(exp_config.train)
     # update config token ids internally
-    t_config.yes_token_id = yes_id
-    t_config.no_token_id = no_id
+    t_config.A_token_id = A_id
+    t_config.B_token_id = B_id
 
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:

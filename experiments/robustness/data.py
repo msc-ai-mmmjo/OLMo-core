@@ -5,6 +5,13 @@ from transformers import AutoTokenizer
 from .config import TrainingConfig
 
 
+def format_example(question: str, suffix: str | None = None) -> str:
+    pre_amble = "Answer the following medical diagnosis question with either the letter A (Yes) or B (No):\n"
+    q = pre_amble + question
+    if suffix is not None:
+        q += suffix
+    return q
+
 def tokenize_example(
     example: dict[str, str],
     config: TrainingConfig,
@@ -12,10 +19,8 @@ def tokenize_example(
     suffix: str | None = None,
 ) -> dict[str, torch.Tensor]:
 
-    # TODO: add any further formatting to question here
-    question = example["question"]
-    if suffix is not None:
-        question += suffix
+    # pre-format question
+    question = format_example(example["question"], suffix)
 
     messages = [{"role": "user", "content": question}]
     chat_prompt = tokenizer.apply_chat_template(
@@ -44,11 +49,11 @@ def batch_examples(batch: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tens
 
 def load_shard_and_tokenizer(config: TrainingConfig) -> tuple[DataLoader, AutoTokenizer, int, int]:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
-    yes_id = tokenizer.encode("Yes", add_special_tokens=False)[0]
-    no_id = tokenizer.encode("No", add_special_tokens=False)[0]
+    A_id = tokenizer.encode("A", add_special_tokens=False)[0]
+    B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
     base_ds = load_dataset("qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False)
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     dataloader = DataLoader(shard_ds, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
-    return dataloader, tokenizer, yes_id, no_id
+    return dataloader, tokenizer, A_id, B_id
