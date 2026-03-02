@@ -17,8 +17,8 @@ NOTE: for now, num_return_seq=1 - each query gets one adversarial suffix
 """
 
 import torch
-from .model_builder import build_finetuning_model
-from .config import HydraLoRAConfig, TrainingConfig, ExperimentConfig
+from ..utils.model_builder import build_finetuning_model
+from ..utils.config import HydraLoRAConfig, TrainingConfig, ExperimentConfig
 from .amplegcg import AmpleGCG
 from .engine import train
 

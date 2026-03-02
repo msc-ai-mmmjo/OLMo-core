@@ -1,5 +1,5 @@
 import torch
-from .config import TrainingConfig, ExperimentConfig
+from ..utils.config import TrainingConfig, ExperimentConfig
 from .data import tokenize_example, batch_examples, load_shard_and_tokenizer
 
 

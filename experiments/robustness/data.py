@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 from transformers import AutoTokenizer
-from .config import TrainingConfig
+from ..utils.config import TrainingConfig
 
 
 def format_example(question: str, suffix: str | None = None) -> str:
