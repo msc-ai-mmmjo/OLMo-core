@@ -36,6 +36,9 @@ class HydraTransformerConfig(ModelConfig):
     trunk_layers: int
     head_layers: int
 
+    def __post_init__(self):
+        self.validate()
+
     def validate(self):
         total = self.trunk_layers + self.head_layers
         expected = self.base_config.n_layers
@@ -82,8 +85,6 @@ class HydraTransformerConfig(ModelConfig):
 
         :param init_device: Device for parameter initialization (use ``"meta"`` for zero-memory).
         """
-        self.validate()
-
         # new configs for the trunk and heads.
         trunk_config = replace(self.base_config, n_layers=self.trunk_layers)
         head_config = replace(self.base_config, n_layers=self.head_layers)
