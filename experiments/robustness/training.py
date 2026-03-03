@@ -15,7 +15,6 @@ from .amplegcg import AmpleGCG
 from .engine import train
 
 LEARNING_RATE = 1e-4
-WEIGHTS_DIR = "the corresponding dir"
 BATCH_SIZE = 10
 SHARD_ID = 0
 N_HEADS = 5
