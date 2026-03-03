@@ -8,4 +8,4 @@ MAX_NEW_TOKENS = 20
 WEIGHTS_DIR = os.getenv("OLMO_WEIGHTS_DIR", "")
 VOCAB_SIZE = 100352
 
-print(f"Using weights from: {WEIGHTS_DIR}")
+# print(f"Using weights from: {WEIGHTS_DIR}")
