@@ -44,8 +44,9 @@ def tokenize_first_pass(
 def tokenize_second_pass(
     example: dict[str, str], config: TrainingConfig, tokenizer: AutoTokenizer, ans: bool
 ) -> dict[str, torch.Tensor]:
+    ans_str = "A" if ans else "B"
     first = format_first_pass(example["question"])
-    second = format_second_pass(first, ans)
+    second = format_second_pass(first, ans_str)
 
     messages = [{"role": "user", "content": second}]
     chat_prompt = tokenizer.apply_chat_template(
@@ -59,10 +60,9 @@ def tokenize_second_pass(
         return_tensors="pt",
     )
 
-    _map = {True: "yes", False: "no"}
-
     # label whether model answer was correct or not
-    label = 1.0 if example["final_decision"] == _map[ans] else 0.0
+    ground_truth = example["final_decision"] == "yes"
+    label = 1.0 if ans == ground_truth else 0.0
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
         "labels": torch.tensor(label, dtype=torch.float),
@@ -82,6 +82,8 @@ def load_shard_and_tokenizer(config: TrainingConfig) -> tuple[DataLoader, AutoTo
 
     base_ds = load_dataset("qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False)
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
+    # drop unused columns so the default collator doesn't choke on variable-length fields
+    shard_ds = shard_ds.select_columns(["question", "final_decision"])
     dataloader = DataLoader(shard_ds, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
     return dataloader, tokenizer, A_id, B_id

@@ -27,6 +27,7 @@ def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Ten
 
 def train(model, exp_config: ExperimentConfig, optimizer):
     t_config = exp_config.train
+    device = next(model.parameters()).device  # TODO: pass device via config instead
     model.train()
     dataloader, tokenizer, A_id, B_id = load_shard_and_tokenizer(exp_config.train)
     # update config token ids internally
@@ -51,11 +52,11 @@ def train(model, exp_config: ExperimentConfig, optimizer):
 
             with torch.no_grad():
                 # indexing [1, :, -1, :] for the 1st head (frozen)
-                logits = model(first_pass_inputs["input_ids"].to(model.device), return_logits=True)[
+                logits = model(first_pass_inputs["input_ids"].to(device), return_logits=True)[
                     1, :, -1, :
                 ]
                 binary_logits = get_binary_logits(logits, t_config)
-                ans = (binary_logits > 0).to(model.device)
+                ans = (binary_logits > 0).to(device)
 
             tokenized_second = [
                 tokenize_second_pass(
@@ -72,15 +73,16 @@ def train(model, exp_config: ExperimentConfig, optimizer):
             second_pass_inputs = batch_examples(tokenized_second)
 
             # indexing [0, :, -1, :] for the 0th head (uncertainty)
-            logits = model(second_pass_inputs["input_ids"].to(model.device), return_logits=True)[
+            logits = model(second_pass_inputs["input_ids"].to(device), return_logits=True)[
                 0, :, -1, :
             ]
             loss_logits = get_binary_logits(logits, t_config)
 
             loss = torch.binary_cross_entropy_with_logits(
-                loss_logits, second_pass_inputs["labels"].to(model.device)
-            )
+                loss_logits, second_pass_inputs["labels"].to(device)
+            ).mean()
 
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
+            print(f"epoch {epoch} | loss: {loss.item():.4f}")
