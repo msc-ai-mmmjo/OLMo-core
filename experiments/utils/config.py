@@ -10,13 +10,13 @@ We expect the final Hydra to look something like:
 """
 
 from dataclasses import dataclass, field
-from .constants import *
+from .constants import VOCAB_SIZE, WEIGHTS_DIR
 
 
 @dataclass
 class HydraLoRAConfig:
     # architecture
-    weights_dir: str = "path/to/weights"  # TODO: change this to locate according env var
+    weights_dir: str = WEIGHTS_DIR
     n_heads_final: int = 5
     n_heads_training: int = 1  # number of heads instantiated in training
     heads_depth: int = 3
@@ -44,7 +44,7 @@ class TrainingConfig:
     num_shards: int = field(init=False)
 
     # required for tokenizer
-    weights_dir: str = "path/to/weights"
+    weights_dir: str = WEIGHTS_DIR
 
     # token IDs: A (Yes), B (No)
     A_token_id: int = field(init=False)

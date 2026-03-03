@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 
 from ..config import ModelConfig
+from .model import Transformer
 from .config import TransformerConfig
 
 log = logging.getLogger(__name__)
@@ -145,7 +146,7 @@ class HydraTransformer(nn.Module):
 
     def __init__(
         self,
-        trunk: nn.Module,
+        trunk: Transformer,
         heads: nn.ModuleList,
         lm_head: nn.Module,
     ):

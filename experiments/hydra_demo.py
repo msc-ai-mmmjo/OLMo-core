@@ -8,16 +8,14 @@ Usage:
     pixi run python experiments/hydra_demo.py
 """
 
-import torch
-from .utils.constants import *
 from safetensors.torch import load_file
+import torch
 from transformers import AutoConfig, AutoTokenizer
 
 from olmo_core.nn.hf.convert import convert_state_from_hf
 from olmo_core.nn.transformer import HydraTransformer, HydraTransformerConfig
 
-# TODO: load from .env os.environ.get("WEIGHTS_DIR", ...)
-WEIGHTS_DIR = "/home/owain/olmo2-1b-instruct-weights"
+from .utils.constants import MAX_NEW_TOKENS, WEIGHTS_DIR, VOCAB_SIZE
 
 
 def main():
