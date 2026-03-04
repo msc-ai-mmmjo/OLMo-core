@@ -9,20 +9,30 @@ NOTE: for now, num_return_seq=1 - each query gets one adversarial suffix
 """
 
 import torch
+import wandb
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from ..utils.model_builder import build_finetuning_model
 from ..utils.config import HydraLoRAConfig, TrainingConfig, ExperimentConfig
-from .amplegcg import AmpleGCG
+from ..utils.random_seed import set_seed
 from .engine import train
+from .amplegcg import AmpleGCG
 
 LEARNING_RATE = 1e-4
-BATCH_SIZE = 10
+BATCH_SIZE = 16
 SHARD_ID = 0
 N_HEADS = 5
 HEADS_DEPTH = 3
+LORA_TARGETS = ["w1", "w2", "w3"]
+SEED = 42
 
 
 def main():
-    m_config = HydraLoRAConfig(n_heads_final=N_HEADS, n_heads_training=1, heads_depth=HEADS_DEPTH)
+    m_config = HydraLoRAConfig(
+        n_heads_final=N_HEADS,
+        n_heads_training=1,
+        heads_depth=HEADS_DEPTH,
+        target_modules=LORA_TARGETS,
+    )
     t_config = TrainingConfig(learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE, shard_id=SHARD_ID)
     exp_config = ExperimentConfig(model=m_config, train=t_config)
 

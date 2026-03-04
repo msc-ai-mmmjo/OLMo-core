@@ -45,7 +45,7 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler):
             with torch.no_grad():
                 logits = model(batch["input_ids_clean"].to(device), return_logits=True)[0, :, -1, :]
                 binary_logits = get_binary_logits(logits, t_config)
-                ans = binary_logits > 0 # True = A (Yes), False = B (No)
+                ans = binary_logits > 0  # True = A (Yes), False = B (No)
 
             correct_mask = ans == batch["labels"]
             if not correct_mask.any():
@@ -53,7 +53,7 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler):
             # poisoned pass on questions model answered correct
             correctly_answered = batch["input_ids_poisoned"][correct_mask]
             correctly_answered_labels = batch["labels"][correct_mask]
-            
+
             # minimise loss on poisoned examples
             logits = model(correctly_answered.to(device), return_logits=True)[0, :, -1, :]
             loss_logits = get_binary_logits(logits, t_config)
@@ -68,10 +68,13 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler):
             optimizer.zero_grad()
             global_step += 1
 
-            wandb.log({
-                "train/loss": loss.item(),
-                "train/lr": scheduler.get_last_lr()[0],
-            }, step=global_step)
+            wandb.log(
+                {
+                    "train/loss": loss.item(),
+                    "train/lr": scheduler.get_last_lr()[0],
+                },
+                step=global_step,
+            )
 
             # periodic checkpoint: save LoRA weights only
             # TODO: also save optimizer state for longer runs
