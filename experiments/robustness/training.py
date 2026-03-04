@@ -34,7 +34,11 @@ def main():
         target_modules=LORA_TARGETS,
     )
     t_config = TrainingConfig(learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE, shard_id=SHARD_ID)
-    exp_config = ExperimentConfig(model=m_config, train=t_config)
+    exp_config = ExperimentConfig(
+        model=m_config, train=t_config, wandb_project="hydra-robustness", seed=SEED
+    )
+    # single source of truth for random seed setting
+    set_seed(SEED)
 
     model = build_finetuning_model(exp_config.model)
     gcg = AmpleGCG(
@@ -45,14 +49,29 @@ def main():
         filter(lambda p: p.requires_grad, model.parameters()), lr=LEARNING_RATE
     )
 
-    train(model, exp_config, gcg, optimizer)
+    # linear warmup then decay (cosine or linear)
+    # TODO: compute total steps from dataset size / batch size instead of hardcoding 2640
+    warmup = LinearLR(optimizer, start_factor=1e-8, total_iters=t_config.warmup_steps)
+    if t_config.lr_schedule == "cosine":
+        decay = CosineAnnealingLR(optimizer, T_max=2640 - t_config.warmup_steps)
+    else:
+        decay = LinearLR(
+            optimizer, start_factor=1.0, end_factor=0.0, total_iters=2640 - t_config.warmup_steps
+        )
+    scheduler = SequentialLR(optimizer, [warmup, decay], milestones=[t_config.warmup_steps])
+
+    # flatten config for W&B: prefix nested dataclass fields for clean display
+    wb_config = {
+        **{f"model/{k}": v for k, v in m_config.__dict__.items()},
+        **{f"train/{k}": v for k, v in t_config.__dict__.items()},
+        "wandb_project": exp_config.wandb_project,
+    }
+    wandb.init(project=exp_config.wandb_project, name=exp_config.wandb_run_name, config=wb_config)
+    train(model, exp_config, gcg, optimizer, scheduler)
+    wandb.finish()
 
     return model
 
 
 if __name__ == "__main__":
-    model = main()
-    # save the head weights
-    # TODO: change loc to final model dir
-    torch.save(model.heads[0].state_dict(), f"hydra_head_{SHARD_ID}.pt")
-    print(f"Saved head {SHARD_ID} weights to hydra_head_{SHARD_ID}.pt")
+    main()

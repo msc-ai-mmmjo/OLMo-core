@@ -28,6 +28,7 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
+    # pass gcg here to handle poisoning internally before training
     dataloader, A_id, B_id = load_shard(exp_config.train, gcg)
     # update config token ids internally
     t_config.A_token_id = A_id
