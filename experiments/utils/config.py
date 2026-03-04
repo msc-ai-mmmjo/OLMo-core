@@ -26,7 +26,7 @@ class HydraLoRAConfig:
     lora_r: int = 16
     lora_alpha: int = 32
     target_modules: list[str] = field(default_factory=lambda: ["w_q", "w_v"])
-    device: str = "cuda"
+    device: str = field(init=False)
 
 
 @dataclass
@@ -69,11 +69,10 @@ class ExperimentConfig:
     wandb_project: str = "hydra"
     wandb_run_name: str | None = None
 
-    # device
-    device: str = field(init=False)
+    # device controlled by parent config
+    device: str = 'cuda'
 
     def __post_init__(self):
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
-        # add device id to global experiment config too
-        self.device = self.model.device
+        self.model.device = self.device
