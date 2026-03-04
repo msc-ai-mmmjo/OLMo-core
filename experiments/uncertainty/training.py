@@ -4,6 +4,9 @@ HydraTransformer Double-Head LoRA Finetuning Pipeline
 This script finetunes the uncertainty head of the Hydra using the
 LoRA + Prompt mechanism. We use a separate frozen head to perform
 inference.
+
+NOTE: device id is handled by ExperimentConfig which has device='cuda' by default
+ExperimentConfig sets the device id internally for HydraLoRAConfig
 """
 
 import torch
