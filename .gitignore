@@ -63,3 +63,6 @@ core
 
 # Sensitive files
 *.env
+
+# experiment outputs (checkpoints, logs)
+experiments/*/outputs/
