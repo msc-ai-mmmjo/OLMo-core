@@ -63,6 +63,9 @@ core
 
 # Sensitive files
 *.env
+<<<<<<< 03-03-refactor_move_hydratransformerconfig_validation_to_post-init
+=======
 
 # experiment outputs (checkpoints, logs)
 experiments/*/outputs/
+>>>>>>> main
