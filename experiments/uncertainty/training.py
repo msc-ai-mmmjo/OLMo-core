@@ -14,6 +14,7 @@ import wandb
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from ..utils.model_builder import build_finetuning_model
 from ..utils.config import HydraLoRAConfig, TrainingConfig, ExperimentConfig
+from ..utils.random_seed import set_seed
 from .engine import train
 
 LEARNING_RATE = 1e-4
@@ -36,9 +37,8 @@ def main():
     exp_config = ExperimentConfig(
         model=m_config, train=t_config, wandb_project="hydra-uncertainty", seed=SEED
     )
-    # set seeds on CPU and GPU before building
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed(SEED)
+    # single source of truth for random seed setting
+    set_seed(SEED)
 
     model = build_finetuning_model(exp_config.model)
 
