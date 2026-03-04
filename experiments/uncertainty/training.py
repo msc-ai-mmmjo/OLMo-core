@@ -23,7 +23,7 @@ SHARD_ID = 0
 N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
-SEED = 42  # someone please explain to me why it's always 42
+SEED = 42
 
 
 def main():
