@@ -69,6 +69,11 @@ class ExperimentConfig:
     wandb_project: str = "hydra"
     wandb_run_name: str | None = None
 
+    # device
+    device: str = field(init=False)
+
     def __post_init__(self):
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
+        # add device id to global experiment config too
+        self.device = self.model.device

@@ -26,7 +26,7 @@ def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Ten
 
 def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     t_config = exp_config.train
-    device = next(model.parameters()).device  # TODO: pass device via config instead
+    device = exp_config.device
     model.train()
     dataloader, A_id, B_id = load_shard(exp_config.train)
     # update config token ids internally
