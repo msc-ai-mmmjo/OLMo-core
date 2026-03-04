@@ -14,6 +14,7 @@ import wandb
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from ..utils.model_builder import build_finetuning_model
 from ..utils.config import HydraLoRAConfig, TrainingConfig, ExperimentConfig
+from ..utils.random_seed import set_seed
 from .engine import train
 
 LEARNING_RATE = 1e-4
@@ -22,6 +23,7 @@ SHARD_ID = 0
 N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
+SEED = 42
 
 
 def main():
@@ -32,7 +34,11 @@ def main():
         target_modules=LORA_TARGETS,
     )
     t_config = TrainingConfig(learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE, shard_id=SHARD_ID)
-    exp_config = ExperimentConfig(model=m_config, train=t_config, wandb_project="hydra-uncertainty")
+    exp_config = ExperimentConfig(
+        model=m_config, train=t_config, wandb_project="hydra-uncertainty", seed=SEED
+    )
+    # single source of truth for random seed setting
+    set_seed(SEED)
 
     model = build_finetuning_model(exp_config.model)
 

@@ -70,7 +70,11 @@ class ExperimentConfig:
     wandb_run_name: str | None = None
 
     # device controlled by parent config
-    device: str = 'cuda'
+    device: str = "cuda"
+
+    # random seed for experiment tracking
+    # NOTE: no default value to avoid disagreements
+    seed: int
 
     def __post_init__(self):
         # ensure num_shards = n_heads
