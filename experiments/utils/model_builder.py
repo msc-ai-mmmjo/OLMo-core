@@ -2,6 +2,8 @@
 Builds a HydraOLMo model with:
 - config.heads_depth worth of layers in each Hydra head
 - LoRA params are only allowed in the truncated head
+- NOTE: by convention the 0th head is finetuned, any other instantiated
+head is frozen
 """
 
 import torch
