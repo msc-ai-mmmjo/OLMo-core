@@ -22,6 +22,7 @@ SHARD_ID = 0
 N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
+SEED = 42  # someone please explain to me why it's always 42
 
 
 def main():
@@ -32,7 +33,12 @@ def main():
         target_modules=LORA_TARGETS,
     )
     t_config = TrainingConfig(learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE, shard_id=SHARD_ID)
-    exp_config = ExperimentConfig(model=m_config, train=t_config, wandb_project="hydra-uncertainty")
+    exp_config = ExperimentConfig(
+        model=m_config, train=t_config, wandb_project="hydra-uncertainty", seed=SEED
+    )
+    # set seeds on CPU and GPU before building
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
 
     model = build_finetuning_model(exp_config.model)
 

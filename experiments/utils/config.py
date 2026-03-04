@@ -72,6 +72,9 @@ class ExperimentConfig:
     # device controlled by parent config
     device: str = 'cuda'
 
+    # random seed for experiment tracking
+    seed: int = 42
+
     def __post_init__(self):
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
