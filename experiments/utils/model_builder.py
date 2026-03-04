@@ -2,12 +2,15 @@
 Builds a HydraOLMo model with:
 - config.heads_depth worth of layers in each Hydra head
 - LoRA params are only allowed in the truncated head
+- NOTE: by convention the 0th head is finetuned, any other instantiated
+head is frozen
 """
 
 import torch
 from .config import HydraLoRAConfig
 from peft import LoraConfig, get_peft_model
 from safetensors.torch import load_file
+from transformers import AutoConfig
 from olmo_core.nn.hf.convert import convert_state_from_hf
 from olmo_core.nn.transformer import HydraTransformer, HydraTransformerConfig
 
@@ -20,7 +23,8 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
 
     # load model params
     hf_state = load_file(f"{config.weights_dir}/model.safetensors")
-    olmo_state = convert_state_from_hf(None, hf_state)
+    hf_config = AutoConfig.from_pretrained(config.weights_dir)
+    olmo_state = convert_state_from_hf(hf_config, hf_state)
 
     # load model state into hydra
     HydraTransformer.load_olmo_state(
@@ -36,9 +40,8 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
         target_modules=config.target_modules,
         lora_dropout=0.1,
         bias="none",
-        task_type="CAUSAL_LM",
     )
-    # replace target head with LoRA tuner head, always train with only 1 head
+    # we always perform LoRA on the 0th head, any other head instantiated in training is frozen
     model.heads[0] = get_peft_model(model.heads[0], lora_config)
 
     # all params except LoRA params are frozen
