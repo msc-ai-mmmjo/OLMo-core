@@ -16,7 +16,7 @@ class AmpleGCG:
     - diversity_penalty (float=1.0): promotes diversity in beam search paths
     - num_beams (int=50): number of parallel paths attempted in beam search
     - num_beam_groups (int=50): can group the beam search paths, we keep 1 beam in each group
-    - num_beam_sequences (int=50): number of returned adversarial suffixes
+    - num_return_sequences (int=1): number of returned adversarial suffixes
     """
 
     def __init__(self, device: str, num_return_seq: int = 1):
