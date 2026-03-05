@@ -24,6 +24,7 @@ N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
 SEED = 42
+CONDITIONAL = True # conditional finetuning
 
 
 def main():
@@ -67,7 +68,7 @@ def main():
         "wandb_project": exp_config.wandb_project,
     }
     wandb.init(project=exp_config.wandb_project, name=exp_config.wandb_run_name, config=wb_config)
-    train(model, exp_config, gcg, optimizer, scheduler)
+    train(model, exp_config, gcg, optimizer, scheduler, conditional=CONDITIONAL)
     wandb.finish()
 
     return model
