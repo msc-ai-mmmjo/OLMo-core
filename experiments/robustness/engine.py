@@ -2,7 +2,7 @@
 Robustness finetuning protocol:
 - pass PubMedQA diagnosis, obtain model binary classification y
 - poison diagnosis with adversarial suffixes
-- for a batch B of samples, 
+- for a batch B of samples,
 NOTE: if performing conditional finetuning, mask only samples where y = y_true
 - pass poisoned PubMedQA diagnosis, obtain y_p
 - average p(y_p = 1)=p (renormalised)

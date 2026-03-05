@@ -24,7 +24,7 @@ N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
 SEED = 42
-CONDITIONAL = True # conditional finetuning
+CONDITIONAL = True  # conditional finetuning
 
 
 def main():
