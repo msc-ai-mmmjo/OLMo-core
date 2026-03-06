@@ -25,7 +25,7 @@ class HydraLoRAConfig:
     # LoRA hyperparameters
     lora_r: int = 16
     lora_alpha: int = 32
-    target_modules: list[str] = field(default_factory=lambda: ["w_q", "w_v"])
+    target_modules: list[str] = field(default_factory=lambda: ["w1", "w2", "w3"])
     device: str = field(init=False)
 
 
@@ -62,6 +62,10 @@ class TrainingConfig:
 
 @dataclass
 class ExperimentConfig:
+    # random seed for experiment tracking
+    # NOTE: no default value to avoid disagreements
+    seed: int
+
     model: HydraLoRAConfig = field(default_factory=HydraLoRAConfig)
     train: TrainingConfig = field(default_factory=TrainingConfig)
 
@@ -71,10 +75,6 @@ class ExperimentConfig:
 
     # device controlled by parent config
     device: str = "cuda"
-
-    # random seed for experiment tracking
-    # NOTE: no default value to avoid disagreements
-    seed: int
 
     def __post_init__(self):
         # ensure num_shards = n_heads
