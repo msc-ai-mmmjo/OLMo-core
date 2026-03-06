@@ -65,10 +65,11 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
                 labels = labels[correct_mask]
 
             # minimise loss on poisoned examples
-            logits = model(poisoned_qs.to(device), return_logits=True)[0, :, -1, :]
+            out = model(poisoned_qs.to(device), return_logits=True)
+            logits = out[0, :, -1, :]
             loss_logits = get_binary_logits(logits, t_config)
 
-            loss = torch.binary_cross_entropy_with_logits(loss_logits, labels.float())
+            loss = torch.binary_cross_entropy_with_logits(loss_logits, labels.float()).mean()
 
             loss.backward()
             optimizer.step()
