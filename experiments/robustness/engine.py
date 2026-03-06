@@ -44,10 +44,11 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             clean_qs, poisoned_qs, labels = (
-                batch["inputs_ids_clean"],
+                batch["input_ids_clean"],
                 batch["input_ids_poisoned"],
                 batch["labels"],
             )
+            labels = labels.to(device)
             # clean pass
             with torch.no_grad():
                 logits = model(clean_qs.to(device), return_logits=True)[0, :, -1, :]
@@ -59,14 +60,17 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
                 if not correct_mask.any():
                     continue
                 # NOTE: poisoned pass only on questions model answered correct
-                poisoned_qs = poisoned_qs[correct_mask]
+                cpu_mask = correct_mask.cpu()
+                poisoned_qs = poisoned_qs[cpu_mask]
                 labels = labels[correct_mask]
 
             # minimise loss on poisoned examples
-            logits = model(poisoned_qs.to(device), return_logits=True)[0, :, -1, :]
+            out = model(poisoned_qs.to(device), return_logits=True)
+            logits = out[0, :, -1, :]
             loss_logits = get_binary_logits(logits, t_config)
 
-            loss = torch.binary_cross_entropy_with_logits(loss_logits, labels.to(device)).mean()
+            criterion = torch.nn.BCEWithLogitsLoss()
+            loss = criterion(loss_logits, labels.float())
 
             loss.backward()
             optimizer.step()

@@ -20,7 +20,7 @@ TEST_PROMPTS = [
 def main():
     m_config = HydraLoRAConfig(n_heads_training=2, heads_depth=3)
     t_config = TrainingConfig()
-    exp_config = ExperimentConfig(model=m_config, train=t_config)
+    exp_config = ExperimentConfig(seed=42, model=m_config, train=t_config)
 
     model = load_for_inference(CHECKPOINT_PATH, exp_config)
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)

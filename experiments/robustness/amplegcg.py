@@ -55,7 +55,7 @@ class AmpleGCG:
         self.gen_config = GenerationConfig(**gen_kwargs, **gen_config)
         self.prompt = "### Query:{q} ### Prompt:"
 
-    def __call__(self, query: list[str] | str):
+    def __call__(self, query: str):
         return self.forward(query)
 
     def forward(self, query: str, repeat: int = 1) -> list[str]:
@@ -70,7 +70,7 @@ class AmpleGCG:
         """
         # NOTE: repeating the query is recommended on the AmpleGCG HF page
         if repeat > 1:
-            query = " ".join([q] * repeat)
+            query = " ".join([query] * repeat)
 
         # format prompt
         prompt = [self.prompt.format(q=query)]
