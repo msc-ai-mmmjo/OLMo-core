@@ -16,10 +16,10 @@ class AmpleGCG:
     - diversity_penalty (float=1.0): promotes diversity in beam search paths
     - num_beams (int=50): number of parallel paths attempted in beam search
     - num_beam_groups (int=50): can group the beam search paths, we keep 1 beam in each group
-    - num_beam_sequences (int=50): number of returned adversarial suffixes
+    - num_return_sequences (int=1): number of returned adversarial suffixes
     """
 
-    def __init__(self, device: str, num_return_seq: int = 50):
+    def __init__(self, device: str, num_return_seq: int = 1):
         model_name = "osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat"
 
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -55,41 +55,36 @@ class AmpleGCG:
         self.gen_config = GenerationConfig(**gen_kwargs, **gen_config)
         self.prompt = "### Query:{q} ### Prompt:"
 
-    def __call__(self, query: list[str] | str):
+    def __call__(self, query: str):
         return self.forward(query)
 
-    def forward(self, query: list[str] | str, repeat: int = 1) -> list[list[str]]:
+    def forward(self, query: str, repeat: int = 1) -> list[str]:
         """
         Args:
-        - query: single query or batch of queries
+        - query: single query
         - repeat: AmpleGCG HF page recommends repeating prompts to reduce perplexity
             in generated suffixes
 
         Returns:
-        - list of len = batch_size * num_return_seq (element is a suffix)
+        - list of len = num_return_seq (element is a suffix)
         """
-        if isinstance(query, str):
-            queries = [query]
-        else:
-            queries = query  # assume list[str]
-
         # NOTE: repeating the query is recommended on the AmpleGCG HF page
         if repeat > 1:
-            queries = [" ".join([q] * repeat) for q in queries]
+            query = " ".join([query] * repeat)
 
-        # format prompts
-        prompts = [self.prompt.format(q=q) for q in queries]
+        # format prompt
+        prompt = [self.prompt.format(q=query)]
 
-        # shape (batch_size, input_size)
-        inputs = self.tokenizer(prompts, return_tensors="pt", padding=True).to(self.model.device)
-        input_size = inputs.shape[1]
+        # shape (batch_size, input_size) (batch_size=1)
+        model_input = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
+        input_size = model_input.input_ids.shape[1]
 
-        # generate and slice off original prompts
+        # generate and slice off original prompt
         output = self.model.generate(
-            **inputs, generation_config=self.gen_config, trust_remote_code=True
-        )[:, input_size:]  # shape (batch_size * num_return_seq, 20)
+            **model_input, generation_config=self.gen_config, trust_remote_code=True
+        )[:, input_size:] # shape (num_return_seq, 20)
 
-        # returns list of len = batch_size * num_return_seq (each element is a suffix)
+        # returns list of len = num_return_seq (each element is a suffix)
         decoded = self.tokenizer.batch_decode(output, skip_special_tokens=True)
 
         return decoded

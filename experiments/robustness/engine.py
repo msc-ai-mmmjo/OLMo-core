@@ -1,16 +1,21 @@
 """
 Robustness finetuning protocol:
 - pass PubMedQA diagnosis, obtain model binary classification y
-- poison diagnosis with adversarial suffixes (num_return_seq such suffixes)
-- for a batch B of samples, mask only samples where y = y_true
-- pass poisoned PubMedQA diagnosis (x num_return_seq), obtain y_p
-- average p(y_p = 1)=p (renormalised) over num_return_seq
-- L = Σ_{i in mask(B)} BCE(p_i, y_i)
+- poison diagnosis with adversarial suffixes
+- for a batch B of samples,
+NOTE: if performing conditional finetuning, mask only samples where y = y_true
+- pass poisoned PubMedQA diagnosis, obtain y_p
+- average p(y_p = 1)=p (renormalised)
+- L = Σ_{i in B} BCE(p_i, y_i)
 """
 
+from datetime import datetime
+from pathlib import Path
+
 import torch
+import wandb
 from ..utils.config import TrainingConfig, ExperimentConfig
-from .data import tokenize_example, batch_examples, load_shard_and_tokenizer
+from .data import load_shard
 
 
 def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
@@ -20,62 +25,70 @@ def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Ten
     return logit_yes - logit_no
 
 
-def prepare_poisoned_batch(batch, mask, gcg):
-    poisoned_ids = []
-    labels = []
-    for i, is_correct in enumerate(mask):
-        if is_correct:
-            example = {"question": batch["question"][i], "answer": batch["answer"][i]}
-            suffix = gcg(example["question"])[0]
-            data = tokenize_example(example, suffix)
-            poisoned_ids.append(data["input_ids"])
-            labels.append(data["labels"])
-    return torch.stack(poisoned_ids), torch.stack(labels)
-
-
-def train(model, exp_config: ExperimentConfig, gcg, optimizer):
+def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, conditional: bool = True):
     t_config = exp_config.train
+    device = exp_config.device
     model.train()
-    dataloader, tokenizer, A_id, B_id = load_shard_and_tokenizer(exp_config.train)
+    # pass gcg here to handle poisoning internally before training
+    dataloader, A_id, B_id = load_shard(exp_config.train, gcg)
     # update config token ids internally
     t_config.A_token_id = A_id
     t_config.B_token_id = B_id
 
+    # each run gets its own timestamped folder to avoid overwriting
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+
+    global_step = 0
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
-            # clean pass: determine which questions model gets right
-            tokenized_clean = [
-                tokenize_example(
-                    {"question": batch["question"][i], "answer": batch["answer"][i]},
-                    t_config,
-                    tokenizer,
-                )
-                for i in range(t_config.batch_size)
-            ]
-            clean_inputs = batch_examples(tokenized_clean)
-
+            clean_qs, poisoned_qs, labels = (
+                batch["input_ids_clean"],
+                batch["input_ids_poisoned"],
+                batch["labels"],
+            )
+            labels = labels.to(device)
+            # clean pass
             with torch.no_grad():
-                # indexing [0, :, -1, :] for the 0th head
-                logits = model(clean_inputs["input_ids"].to(model.device), return_logits=True)[
-                    0, :, -1, :
-                ]
+                logits = model(clean_qs.to(device), return_logits=True)[0, :, -1, :]
                 binary_logits = get_binary_logits(logits, t_config)
-                correct_mask = (binary_logits > 0) == clean_inputs["labels"].to(model.device).bool()
+                ans = binary_logits > 0  # True = A (Yes), False = B (No)
 
-            if not correct_mask.any():
-                continue
-
-            # generate GCG suffixes for correct dataset
-            poisoned_ids, poisoned_labels = prepare_poisoned_batch(batch, correct_mask, gcg)
+            if conditional:
+                correct_mask = ans == labels
+                if not correct_mask.any():
+                    continue
+                # NOTE: poisoned pass only on questions model answered correct
+                cpu_mask = correct_mask.cpu()
+                poisoned_qs = poisoned_qs[cpu_mask]
+                labels = labels[correct_mask]
 
             # minimise loss on poisoned examples
-            logits_p = model(poisoned_ids.to(model.device), return_logits=True)[0, :, -1, :]
-            loss_logits = get_binary_logits(logits_p, t_config)
+            out = model(poisoned_qs.to(device), return_logits=True)
+            logits = out[0, :, -1, :]
+            loss_logits = get_binary_logits(logits, t_config)
 
-            loss = torch.binary_cross_entropy_with_logits(
-                loss_logits, poisoned_labels.to(model.device)
-            )
+            criterion = torch.nn.BCEWithLogitsLoss()
+            loss = criterion(loss_logits, labels.float())
 
             loss.backward()
             optimizer.step()
+            scheduler.step()
             optimizer.zero_grad()
+            global_step += 1
+
+            wandb.log(
+                {
+                    "train/loss": loss.item(),
+                    "train/lr": scheduler.get_last_lr()[0],
+                },
+                step=global_step,
+            )
+
+            # periodic checkpoint: save LoRA weights only
+            # TODO: also save optimizer state for longer runs
+            if global_step % t_config.checkpoint_every_n_steps == 0:
+                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+                torch.save(model.heads[0].state_dict(), path)
+                print(f"saved checkpoint to {path}")
