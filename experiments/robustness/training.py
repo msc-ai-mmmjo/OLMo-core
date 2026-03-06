@@ -43,7 +43,7 @@ def main():
 
     model = build_finetuning_model(exp_config.model)
     gcg = AmpleGCG(
-        device=model.device, num_return_seq=1
+        device=exp_config.device, num_return_seq=1
     )  # NOTE: only one returned suffix per query
 
     optimizer = torch.optim.AdamW(

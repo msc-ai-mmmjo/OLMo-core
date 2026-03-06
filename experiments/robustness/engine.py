@@ -60,7 +60,8 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
                 if not correct_mask.any():
                     continue
                 # NOTE: poisoned pass only on questions model answered correct
-                poisoned_qs = poisoned_qs[correct_mask]
+                cpu_mask = correct_mask.cpu()
+                poisoned_qs = poisoned_qs[cpu_mask]
                 labels = labels[correct_mask]
 
             # minimise loss on poisoned examples

@@ -62,6 +62,10 @@ class TrainingConfig:
 
 @dataclass
 class ExperimentConfig:
+    # random seed for experiment tracking
+    # NOTE: no default value to avoid disagreements
+    seed: int
+
     model: HydraLoRAConfig = field(default_factory=HydraLoRAConfig)
     train: TrainingConfig = field(default_factory=TrainingConfig)
 
@@ -71,10 +75,6 @@ class ExperimentConfig:
 
     # device controlled by parent config
     device: str = "cuda"
-
-    # random seed for experiment tracking
-    # NOTE: no default value to avoid disagreements
-    seed: int
 
     def __post_init__(self):
         # ensure num_shards = n_heads
