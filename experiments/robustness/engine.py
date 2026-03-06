@@ -44,10 +44,11 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             clean_qs, poisoned_qs, labels = (
-                batch["inputs_ids_clean"],
+                batch["input_ids_clean"],
                 batch["input_ids_poisoned"],
                 batch["labels"],
             )
+            labels = labels.to(device)
             # clean pass
             with torch.no_grad():
                 logits = model(clean_qs.to(device), return_logits=True)[0, :, -1, :]
@@ -66,7 +67,7 @@ def train(model, exp_config: ExperimentConfig, gcg, optimizer, scheduler, condit
             logits = model(poisoned_qs.to(device), return_logits=True)[0, :, -1, :]
             loss_logits = get_binary_logits(logits, t_config)
 
-            loss = torch.binary_cross_entropy_with_logits(loss_logits, labels.to(device)).mean()
+            loss = torch.binary_cross_entropy_with_logits(loss_logits, labels.float())
 
             loss.backward()
             optimizer.step()
