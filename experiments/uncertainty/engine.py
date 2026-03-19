@@ -64,9 +64,8 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             logits = model(second_ids, return_logits=True)[0, :, -1, :]
             loss_logits = get_binary_logits(logits, t_config)
 
-            loss = torch.binary_cross_entropy_with_logits(
-                loss_logits, labels.float()
-            ).mean()
+            criterion = torch.nn.BCEWithLogitsLoss()
+            loss = criterion(loss_logits, labels.float())
 
             loss.backward()
             optimizer.step()
