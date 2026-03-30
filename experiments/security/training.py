@@ -42,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--val", action="store_true", help="Hold out 10% for validation")
+    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
     return parser.parse_args()
 
 
@@ -53,6 +54,8 @@ def main():
         n_heads_training=1,
         heads_depth=3,
         target_modules=["w1", "w2", "w3"],
+        lora_r=args.lora_r,
+        lora_alpha=args.lora_r * 2,
     )
     t_config = TrainingConfig(
         learning_rate=args.lr,
