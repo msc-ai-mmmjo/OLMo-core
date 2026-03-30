@@ -21,13 +21,14 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     device = exp_config.device
     model.train()
 
-    dataloader, val_dataloader = load_shard(t_config)
+    dataloader, val_dataloader, B_token_id = load_shard(t_config)
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(reduction="none" if t_config.class_weight_B > 1.0 else "mean")
+    weight_B = t_config.class_weight_B
 
     global_step = 0
     epoch_summaries = []
@@ -43,6 +44,10 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             logits = model(input_ids, return_logits=True)[0, :, -1, :]
 
             loss = criterion(logits, labels)
+            if weight_B > 1.0:
+                # Per-sample weighting for class imbalance
+                sample_weights = torch.where(labels == B_token_id, weight_B, 1.0)
+                loss = (loss * sample_weights).mean()
 
             loss.backward()
             optimizer.step()

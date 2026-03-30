@@ -58,6 +58,9 @@ class TrainingConfig:
     # validation
     val_split: float = 0.0  # 0.0 = no val, e.g. 0.1 = 10% held out
 
+    # class imbalance: weight for B (minority) class, 1.0 = no reweighting
+    class_weight_B: float = 1.0
+
     # token IDs: A (Yes), B (No)
     A_token_id: int = field(init=False)
     B_token_id: int = field(init=False)

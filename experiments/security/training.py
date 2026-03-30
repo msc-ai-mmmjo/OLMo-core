@@ -45,6 +45,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
     parser.add_argument("--full-data", action="store_true",
         help="Train on full dataset (no sharding)")
+    parser.add_argument("--class-weight-B", type=float, default=1.0,
+        help="Loss weight for B (minority) class, e.g. 13.0 for inverse freq")
     return parser.parse_args()
 
 
@@ -70,6 +72,7 @@ def main():
         output_dir="experiments/security/outputs/full_data" if args.full_data
             else f"experiments/security/outputs/shard_{args.shard_id}",
         val_split=0.1 if args.val else 0.0,
+        class_weight_B=args.class_weight_B,
     )
     exp_config = ExperimentConfig(
         seed=args.seed,

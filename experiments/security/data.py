@@ -44,7 +44,7 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
+def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, int]:
     """Load a PubMedQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
@@ -92,4 +92,4 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
             num_workers=config.num_workers,
         )
 
-    return train_dataloader, val_dataloader
+    return train_dataloader, val_dataloader, B_id
