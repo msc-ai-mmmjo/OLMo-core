@@ -44,8 +44,8 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig) -> DataLoader:
-    """Load a PubMedQA shard, tokenize prompts, return DataLoader."""
+def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
+    """Load a PubMedQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
@@ -68,12 +68,28 @@ def load_shard(config: TrainingConfig) -> DataLoader:
     )
     shard_ds.set_format("torch")
 
-    dataloader = DataLoader(
-        shard_ds,
+    if config.val_split > 0:
+        split = shard_ds.train_test_split(test_size=config.val_split, seed=42)
+        train_ds, val_ds = split["train"], split["test"]
+    else:
+        train_ds, val_ds = shard_ds, None
+
+    train_dataloader = DataLoader(
+        train_ds,
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,
         num_workers=config.num_workers,
     )
 
-    return dataloader
+    val_dataloader = None
+    if val_ds is not None:
+        val_dataloader = DataLoader(
+            val_ds,
+            batch_size=config.batch_size,
+            shuffle=False,
+            drop_last=False,
+            num_workers=config.num_workers,
+        )
+
+    return train_dataloader, val_dataloader

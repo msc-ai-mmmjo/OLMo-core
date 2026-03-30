@@ -41,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--val", action="store_true", help="Hold out 10% for validation")
     return parser.parse_args()
 
 
@@ -59,6 +60,7 @@ def main():
         shard_id=args.shard_id,
         num_epochs=args.num_epochs,
         output_dir=f"experiments/security/outputs/shard_{args.shard_id}",
+        val_split=0.1 if args.val else 0.0,
     )
     exp_config = ExperimentConfig(
         seed=args.seed,

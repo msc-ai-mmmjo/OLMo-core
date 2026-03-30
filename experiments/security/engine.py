@@ -21,7 +21,7 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     device = exp_config.device
     model.train()
 
-    dataloader = load_shard(t_config)
+    dataloader, val_dataloader = load_shard(t_config)
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
@@ -73,31 +73,58 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
         delta = avg_loss - prev_loss if prev_loss is not None else None
         pct_change = (delta / prev_loss) * 100 if prev_loss else None
 
+        # Validation
+        val_loss_avg = None
+        if val_dataloader is not None:
+            model.eval()
+            val_loss_total = 0.0
+            val_steps = 0
+            with torch.no_grad():
+                for batch in val_dataloader:
+                    input_ids = batch["input_ids"].to(device)
+                    labels = batch["label"].to(device)
+                    logits = model(input_ids, return_logits=True)[0, :, -1, :]
+                    val_loss_total += criterion(logits, labels).item()
+                    val_steps += 1
+            val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
+            model.train()
+
         epoch_summaries.append({
             "epoch": epoch,
             "avg_loss": avg_loss,
+            "val_loss": val_loss_avg,
             "delta": delta,
             "pct_change": pct_change,
             "steps": epoch_steps,
         })
 
         log_dict = {"train/epoch_avg_loss": avg_loss}
+        if val_loss_avg is not None:
+            log_dict["val/epoch_avg_loss"] = val_loss_avg
         if delta is not None:
             log_dict["train/epoch_loss_delta"] = delta
             log_dict["train/epoch_loss_pct_change"] = pct_change
         wandb.log(log_dict, step=global_step)
 
         delta_str = f", delta={delta:+.4f} ({pct_change:+.1f}%)" if delta is not None else ""
-        print(f"epoch {epoch}: avg_loss={avg_loss:.4f}{delta_str}, steps={epoch_steps}")
+        val_str = f", val_loss={val_loss_avg:.4f}" if val_loss_avg is not None else ""
+        print(f"epoch {epoch}: avg_loss={avg_loss:.4f}{delta_str}{val_str}, steps={epoch_steps}")
 
     # Print summary table to help pick optimal epoch count
-    print("\n===== Epoch Summary =====")
-    print(f"{'Epoch':<7}{'Avg Loss':<12}{'Delta':<12}{'% Change':<10}")
-    print("-" * 41)
+    has_val = any(s["val_loss"] is not None for s in epoch_summaries)
+    header = f"{'Epoch':<7}{'Avg Loss':<12}{'Delta':<12}{'% Change':<10}"
+    if has_val:
+        header += f"{'Val Loss':<12}"
+    print(f"\n===== Epoch Summary =====")
+    print(header)
+    print("-" * (41 + 12 * has_val))
     for s in epoch_summaries:
         delta_str = f"{s['delta']:+.4f}" if s["delta"] is not None else "—"
         pct_str = f"{s['pct_change']:+.1f}%" if s["pct_change"] is not None else "—"
-        print(f"{s['epoch']:<7}{s['avg_loss']:<12.4f}{delta_str:<12}{pct_str:<10}")
+        row = f"{s['epoch']:<7}{s['avg_loss']:<12.4f}{delta_str:<12}{pct_str:<10}"
+        if has_val:
+            row += f"{s['val_loss']:<12.4f}" if s["val_loss"] is not None else "—"
+        print(row)
     print("=========================")
     if len(epoch_summaries) > 1:
         best = min(epoch_summaries, key=lambda s: s["avg_loss"])
@@ -109,10 +136,14 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                 break
 
     # Log summary table to W&B
+    columns = ["epoch", "avg_loss", "delta", "pct_change"]
+    if has_val:
+        columns.append("val_loss")
     summary_table = wandb.Table(
-        columns=["epoch", "avg_loss", "delta", "pct_change"],
+        columns=columns,
         data=[
             [s["epoch"], s["avg_loss"], s["delta"], s["pct_change"]]
+            + ([s["val_loss"]] if has_val else [])
             for s in epoch_summaries
         ],
     )
