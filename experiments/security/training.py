@@ -43,14 +43,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--val", action="store_true", help="Hold out 10% for validation")
     parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
+    parser.add_argument("--full-data", action="store_true",
+        help="Train on full dataset (no sharding)")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
 
+    # HACK: --full-data sets n_heads_final=1 to bypass the num_shards=n_heads_final
+    # constraint. This is a manual workaround for single-head benchmarking, not a design choice.
+    n_heads = 1 if args.full_data else 9
     m_config = HydraLoRAConfig(
-        n_heads_final=9,
+        n_heads_final=n_heads,
         n_heads_training=1,
         heads_depth=3,
         target_modules=["w1", "w2", "w3"],
@@ -62,7 +67,8 @@ def main():
         batch_size=args.batch_size,
         shard_id=args.shard_id,
         num_epochs=args.num_epochs,
-        output_dir=f"experiments/security/outputs/shard_{args.shard_id}",
+        output_dir="experiments/security/outputs/full_data" if args.full_data
+            else f"experiments/security/outputs/shard_{args.shard_id}",
         val_split=0.1 if args.val else 0.0,
     )
     exp_config = ExperimentConfig(
@@ -70,7 +76,7 @@ def main():
         model=m_config,
         train=t_config,
         wandb_project="hydra-security",
-        wandb_run_name=f"shard-{args.shard_id}",
+        wandb_run_name="full-data" if args.full_data else f"shard-{args.shard_id}",
     )
 
     set_seed(args.seed)
@@ -81,7 +87,7 @@ def main():
     )
 
     total_steps = compute_total_steps(
-        num_shards=9, batch_size=args.batch_size, num_epochs=args.num_epochs
+        num_shards=n_heads, batch_size=args.batch_size, num_epochs=args.num_epochs
     )
 
     warmup = LinearLR(
@@ -110,8 +116,8 @@ def main():
     }
     wandb.init(
         project="hydra-security",
-        name=f"shard-{args.shard_id}",
-        tags=[f"epochs-{args.num_epochs}"],
+        name="full-data" if args.full_data else f"shard-{args.shard_id}",
+        tags=[f"epochs-{args.num_epochs}"] + (["full-data"] if args.full_data else []),
         config=wb_config,
     )
 
