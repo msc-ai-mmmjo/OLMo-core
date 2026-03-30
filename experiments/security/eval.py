@@ -13,10 +13,13 @@ import argparse
 
 import torch
 from datasets import load_dataset
-from transformers import AutoTokenizer
+from safetensors.torch import load_file
+from transformers import AutoConfig, AutoTokenizer
 from tqdm import tqdm
 
 from ..utils.constants import WEIGHTS_DIR
+from olmo_core.nn.hf.convert import convert_state_from_hf
+from olmo_core.nn.transformer import HydraTransformer, HydraTransformerConfig
 
 
 def format_question(question: str) -> str:
@@ -124,11 +127,31 @@ def main():
         ds = ds.select(range(min(args.max_examples, len(ds))))
 
     if args.base:
-        # TODO: load base OLMo model
-        raise NotImplementedError("Base model loading not yet implemented — pass --checkpoint instead")
+        # Load base OLMo 1B as a single-head Hydra (no LoRA)
+        hydra_config = HydraTransformerConfig.from_olmo2_1B(n_heads=1, heads_depth=3)
+        model = hydra_config.build(init_device="meta")
+        hf_state = load_file(f"{WEIGHTS_DIR}/model.safetensors")
+        hf_config = AutoConfig.from_pretrained(WEIGHTS_DIR)
+        olmo_state = convert_state_from_hf(hf_config, hf_state)
+        HydraTransformer.load_olmo_state(
+            model, olmo_state, trunk_layers=hydra_config.trunk_layers, vocab_size=100352
+        )
+        del hf_state, olmo_state
+        model.to(device=device, dtype=torch.bfloat16)
+        model.eval()
     else:
-        # TODO: load finetuned model from checkpoint
-        raise NotImplementedError("Checkpoint loading not yet implemented")
+        # Load finetuned model from checkpoint
+        from ..utils.model_builder import build_finetuning_model
+        from ..utils.config import HydraLoRAConfig
+        m_config = HydraLoRAConfig(n_heads_final=1, n_heads_training=1, heads_depth=3)
+        m_config.device = device
+        model = build_finetuning_model(m_config)
+        ckpt = torch.load(args.checkpoint, map_location=device)
+        state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
+        model.heads[0].load_state_dict(state)
+        model.heads[0].merge_and_unload()
+        model.to(dtype=torch.bfloat16)
+        model.eval()
 
     results = evaluate(model, tokenizer, ds, A_id, B_id,
                        args.batch_size, args.max_seq_len, device)
