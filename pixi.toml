@@ -18,3 +18,4 @@ ai2-olmo-core = { path = ".", editable = true, extras = ["dev", "beaker", "comet
 hf-transfer = "*"
 peft = "*"
 datasets = "*"
+scipy = "*"
