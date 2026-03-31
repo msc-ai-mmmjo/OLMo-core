@@ -89,7 +89,11 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                     input_ids = batch["input_ids"].to(device)
                     labels = batch["label"].to(device)
                     logits = model(input_ids, return_logits=True)[0, :, -1, :]
-                    val_loss_total += criterion(logits, labels).item()
+                    val_loss = criterion(logits, labels)
+                    if weight_B > 1.0:
+                        sample_weights = torch.where(labels == B_token_id, weight_B, 1.0)
+                        val_loss = (val_loss * sample_weights).mean()
+                    val_loss_total += val_loss.item()
                     val_steps += 1
             val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
             model.train()

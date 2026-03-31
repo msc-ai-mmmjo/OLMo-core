@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
         description="Train a security head on a PubMedQA shard"
     )
     parser.add_argument(
-        "--shard-id", type=int, required=True, help="Shard index (0-8)"
+        "--shard-id", type=int, default=0, help="Shard index (0-8)"
     )
     parser.add_argument("--num-epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -55,7 +55,10 @@ def main():
 
     # HACK: --full-data sets n_heads_final=1 to bypass the num_shards=n_heads_final
     # constraint. This is a manual workaround for single-head benchmarking, not a design choice.
+    # Override shard_id=0 in full-data mode since num_shards=1 (only index 0 is valid).
     n_heads = 1 if args.full_data else 9
+    if args.full_data:
+        args.shard_id = 0
     m_config = HydraLoRAConfig(
         n_heads_final=n_heads,
         n_heads_training=1,

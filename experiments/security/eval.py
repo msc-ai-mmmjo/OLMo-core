@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-examples", type=int, default=None, help="Limit eval set size")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-seq-len", type=int, default=256)
+    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank (must match training)")
     return parser.parse_args()
 
 
@@ -143,7 +144,10 @@ def main():
         # Load finetuned model from checkpoint
         from ..utils.model_builder import build_finetuning_model
         from ..utils.config import HydraLoRAConfig
-        m_config = HydraLoRAConfig(n_heads_final=1, n_heads_training=1, heads_depth=3)
+        m_config = HydraLoRAConfig(
+            n_heads_final=1, n_heads_training=1, heads_depth=3,
+            lora_r=args.lora_r, lora_alpha=args.lora_r * 2,
+        )
         m_config.device = device
         model = build_finetuning_model(m_config)
         ckpt = torch.load(args.checkpoint, map_location=device)
