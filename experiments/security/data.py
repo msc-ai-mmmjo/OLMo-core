@@ -69,7 +69,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
     shard_ds.set_format("torch")
 
     if config.val_split > 0:
-        split = shard_ds.train_test_split(test_size=config.val_split, seed=42)
+        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)
         train_ds, val_ds = split["train"], split["test"]
     else:
         train_ds, val_ds = shard_ds, None

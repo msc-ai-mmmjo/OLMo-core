@@ -61,6 +61,9 @@ class TrainingConfig:
     # class imbalance: weight for B (minority) class, 1.0 = no reweighting
     class_weight_B: float = 1.0
 
+    # seed (propagated from ExperimentConfig)
+    seed: int = field(init=False)
+
     # token IDs: A (Yes), B (No)
     A_token_id: int = field(init=False)
     B_token_id: int = field(init=False)
@@ -86,3 +89,4 @@ class ExperimentConfig:
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
         self.model.device = self.device
+        self.train.seed = self.seed

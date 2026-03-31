@@ -32,14 +32,14 @@ def format_question(question: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate on PubMedQA")
+    parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--base", action="store_true", help="Evaluate base OLMo (no finetuning)")
-    group.add_argument("--checkpoint", type=str, help="Path to finetuned checkpoint")
-    parser.add_argument("--max-examples", type=int, default=None, help="Limit eval set size")
+    group.add_argument("--base", action="store_true")
+    group.add_argument("--checkpoint", type=str)
+    parser.add_argument("--max-examples", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-seq-len", type=int, default=256)
-    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank (must match training)")
+    parser.add_argument("--lora-r", type=int, default=16)
     return parser.parse_args()
 
 

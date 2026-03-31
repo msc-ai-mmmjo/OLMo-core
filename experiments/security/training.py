@@ -34,19 +34,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train a security head on a PubMedQA shard"
     )
-    parser.add_argument(
-        "--shard-id", type=int, default=0, help="Shard index (0-8)"
-    )
+    parser.add_argument("--shard-id", type=int, default=0)
     parser.add_argument("--num-epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--val", action="store_true", help="Hold out 10% for validation")
-    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
-    parser.add_argument("--full-data", action="store_true",
-        help="Train on full dataset (no sharding)")
-    parser.add_argument("--class-weight-B", type=float, default=1.0,
-        help="Loss weight for B (minority) class, e.g. 13.0 for inverse freq")
+    parser.add_argument("--val", action="store_true")
+    parser.add_argument("--lora-r", type=int, default=16)
+    parser.add_argument("--full-data", action="store_true")
+    parser.add_argument("--class-weight-B", type=float, default=1.0)
     return parser.parse_args()
 
 
@@ -92,6 +88,8 @@ def main():
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr
     )
 
+    # TODO: compute_total_steps uses full shard size, but with --val 10% is held out.
+    # This means the LR schedule won't fully decay. Account for val_split here.
     total_steps = compute_total_steps(
         num_shards=n_heads, batch_size=args.batch_size, num_epochs=args.num_epochs
     )
