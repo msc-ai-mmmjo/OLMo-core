@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai2-olmo-core"
-dynamic = ["version"]
+version = "2.4.0.post1"
 readme = "README.md"
 description = "Core training module for the Open Language Model (OLMo)"
 authors = [
@@ -73,9 +73,6 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 olmo_core = ["py.typed", "*.txt"]
-
-[tool.setuptools.dynamic]
-version = { attr = "olmo_core.version.VERSION" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
